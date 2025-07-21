@@ -2,18 +2,20 @@
 #!/usr/bin/python3
 
 """
-This script fetches employee TODO list progress from a REST API.
-It takes an employee ID as a command-line argument and displays
+This script fetches employee Todo list progress from a REST API.
+It takes an an employee ID as a command-line argument and displays
 the employee's name, the number of completed tasks out of the total,
 and the titles of the completed tasks.
 """
 
+
 import requests
 import sys
 
+
 def get_employee_todo_progress(employee_id):
     """
-    Fetches and displays the TODO list progress for a given employee ID.
+    Fetches and displays the todo list progress for a given employee ID.
 
     Args:
         employee_id (int): The ID of the employee.
@@ -24,29 +26,38 @@ def get_employee_todo_progress(employee_id):
     try:
         # Fetch user information
         user_response = requests.get(f"{base_url}/users/{employee_id}")
-        user_response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+        # Raise an HTTPError for bad responses (4xx or 5xx)
+        user_response.raise_for_status()
         user_data = user_response.json()
-        employee_name = user_data.get("name")
+        # Get employee name and strip any leading/trailing whitespace
+        employee_name = user_data.get("name", "").strip()
 
         if not employee_name:
             print(f"Error: Employee with ID {employee_id} not found.")
             return
 
-        # Fetch TODO list for the employee
-        todos_response = requests.get(f"{base_url}/todos", params={"userId": employee_id})
-        todos_response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        # Fetch todo list for the employee
+        todos_response = requests.get(f"{base_url}/todos",
+                                      params={"userId": employee_id})
+        # Raise an HTTPError for bad responses (4xx or 5xx)
+        todos_response.raise_for_status()
         todos_data = todos_response.json()
 
         total_tasks = len(todos_data)
-        completed_tasks = [task for task in todos_data if task.get("completed")]
+        # Filter for completed tasks
+        completed_tasks = [task for task in todos_data
+                           if task.get("completed") is True]
         number_of_done_tasks = len(completed_tasks)
 
-        # Print the first line
-        print(f"Employee {employee_name} is done with tasks({number_of_done_tasks}/{total_tasks}):")
+        # Print the first line in the exact specified format
+        print(f"Employee {employee_name} is done with tasks("
+              f"{number_of_done_tasks}/{total_tasks}):")
 
-        # Print the titles of completed tasks
+        # Print the titles of completed tasks with 1 tabulation and 1 space
         for task in completed_tasks:
-            print(f"\t {task.get('title')}")
+            # Get task title and strip any leading/trailing whitespace
+            task_title = task.get('title', '').strip()
+            print(f"\t {task_title}")
 
     except requests.exceptions.RequestException as e:
         print(f"An error occurred while connecting to the API: {e}")
@@ -58,7 +69,8 @@ def get_employee_todo_progress(employee_id):
 if __name__ == "__main__":
     # Check if an employee ID is provided as a command-line argument
     if len(sys.argv) != 2:
-        print("Usage: python3 0-gather_data_from_an_API.py <employee_id>")
+        print("Usage: python3 0-gather_data_from_an_API.py "
+              "<employee_id>")
         sys.exit(1)
 
     try:
