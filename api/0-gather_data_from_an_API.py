@@ -1,49 +1,64 @@
 
-#!/usr/bin/python3
-"""Script to get todos for a user from API"""
+#!/usr/bin/env python3
 
-import requests
+
 import sys
+import requests
 
-if __name__ == "__main__":
+
+def fetch_user(user_id):
+    """Fetch user data from API."""
+    url = f"https://jsonplaceholder.typicode.com/users/{user_id}"
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_todos(user_id):
+    """Fetch TODO tasks for a given user."""
+    url = f"https://jsonplaceholder.typicode.com/todos"
+    response = requests.get(url, params={"userId": user_id})
+    response.raise_for_status()
+    return response.json()
+
+
+def get_task_summary(tasks):
+    """Return a tuple with number of completed tasks and their titles."""
+    completed = [task["title"] for task in tasks if task.get("completed")]
+    return len(completed), len(tasks), completed
+
+
+def display_progress(user, done_count, total_count, completed_titles):
+    """Print the progress report."""
+    print(f"Employee {user['name']} is done with tasks({done_count}/{total_count}):")
+    for title in completed_titles:
+        print(f"\t {title}")
+
+
+def main():
     if len(sys.argv) != 2:
-        print("Usage: python3 0-gather_data_from_an_API.py <Employee_id>")
+        print("Usage: ./todo_progress_checker.py <employee_id>")
         sys.exit(1)
 
     try:
-        Employee_id = int(sys.argv[1])
+        user_id = int(sys.argv[1])
     except ValueError:
-        print("Employee ID must be an integer")
+        print("Employee ID must be an integer.")
         sys.exit(1)
 
-    # API endpoints
-    user_url = (
-        "https://jsonplaceholder.typicode.com/users/{}".format(Employee_id)
-    )
-    todos_url = (
-        "https://jsonplaceholder.typicode.com/todos?userId={}"
-        .format(Employee_id)
-    )
+    try:
+        user = fetch_user(user_id)
+        todos = fetch_todos(user_id)
+        done, total, completed_titles = get_task_summary(todos)
+        display_progress(user, done, total, completed_titles)
 
-    # Get employee data
-    user_response = requests.get(user_url)
-    if user_response.status_code != 200:
-        print("Employee not found")
+    except requests.exceptions.RequestException as e:
+        print(f"Network error: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: {e}")
         sys.exit(1)
 
-    Employee_name = user_response.json().get("name")
 
-    # Get TODOs
-    todos_response = requests.get(todos_url)
-    todos = todos_response.json()
-
-    # filter completed tasks
-    done_tasks = [task for task in todos if task.get("completed")]
-
-    print(
-        "Employee {} is done with tasks({}/{}):".format(
-            Employee_name, len(done_tasks), len(todos)
-        )
-    )
-    for task in done_tasks:
-        print("\t {}".format(task.get("title")))
+if __name__ == "__main__":
+    main()
