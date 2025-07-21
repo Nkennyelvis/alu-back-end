@@ -1,65 +1,69 @@
 
 #!/usr/bin/python3
 
-"""To do employee's list """
+"""
+This script fetches employee TODO list progress from a REST API.
+It takes an employee ID as a command-line argument and displays
+the employee's name, the number of completed tasks out of the total,
+and the titles of the completed tasks.
+"""
 
-import sys
 import requests
+import sys
 
+def get_employee_todo_progress(employee_id):
+    """
+    Fetches and displays the TODO list progress for a given employee ID.
 
-def fetch_user(user_id):
-    """Fetch user data from API."""
-    url = f"https://jsonplaceholder.typicode.com/users/{user_id}"
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
-
-
-def fetch_todos(user_id):
-    """Fetch TODO tasks for a given user."""
-    url = f"https://jsonplaceholder.typicode.com/todos"
-    response = requests.get(url, params={"userId": user_id})
-    response.raise_for_status()
-    return response.json()
-
-
-def get_task_summary(tasks):
-    """Return a tuple with number of completed tasks and their titles."""
-    completed = [task["title"] for task in tasks if task.get("completed")]
-    return len(completed), len(tasks), completed
-
-
-def display_progress(user, done_count, total_count, completed_titles):
-    """Print the progress report."""
-    print(f"Employee {user['name']} is done with tasks({done_count}/{total_count}):")
-    for title in completed_titles:
-        print(f"\t {title}")
-
-
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: ./todo_progress_checker.py <employee_id>")
-        sys.exit(1)
+    Args:
+        employee_id (int): The ID of the employee.
+    """
+    # Base URL for the API
+    base_url = "https://jsonplaceholder.typicode.com"
 
     try:
-        user_id = int(sys.argv[1])
-    except ValueError:
-        print("Employee ID must be an integer.")
-        sys.exit(1)
+        # Fetch user information
+        user_response = requests.get(f"{base_url}/users/{employee_id}")
+        user_response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+        user_data = user_response.json()
+        employee_name = user_data.get("name")
 
-    try:
-        user = fetch_user(user_id)
-        todos = fetch_todos(user_id)
-        done, total, completed_titles = get_task_summary(todos)
-        display_progress(user, done, total, completed_titles)
+        if not employee_name:
+            print(f"Error: Employee with ID {employee_id} not found.")
+            return
+
+        # Fetch TODO list for the employee
+        todos_response = requests.get(f"{base_url}/todos", params={"userId": employee_id})
+        todos_response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        todos_data = todos_response.json()
+
+        total_tasks = len(todos_data)
+        completed_tasks = [task for task in todos_data if task.get("completed")]
+        number_of_done_tasks = len(completed_tasks)
+
+        # Print the first line
+        print(f"Employee {employee_name} is done with tasks({number_of_done_tasks}/{total_tasks}):")
+
+        # Print the titles of completed tasks
+        for task in completed_tasks:
+            print(f"\t {task.get('title')}")
 
     except requests.exceptions.RequestException as e:
-        print(f"Network error: {e}")
-        sys.exit(1)
+        print(f"An error occurred while connecting to the API: {e}")
+    except ValueError:
+        print("Error: Invalid JSON response from the API.")
     except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1)
-
+        print(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
-    main()
+    # Check if an employee ID is provided as a command-line argument
+    if len(sys.argv) != 2:
+        print("Usage: python3 0-gather_data_from_an_API.py <employee_id>")
+        sys.exit(1)
+
+    try:
+        employee_id = int(sys.argv[1])
+        get_employee_todo_progress(employee_id)
+    except ValueError:
+        print("Error: Employee ID must be an integer.")
+        sys.exit(1)
