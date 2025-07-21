@@ -23,9 +23,9 @@ def main():
             if todo['completed']:
                 completed.append(todo['title'])
 
-    user_name = requests.get(user_url).json()['name']
+    Employee_name = requests.get(user_url).json()['name']
 
-    printer = ("Employee {} is done with tasks({}/{}):".format(user_name,
+    printer = ("Employee {} is done with tasks({}/{}):".format(Employee_name,
                len(completed), total_questions))
     print(printer)
     for q in completed:
