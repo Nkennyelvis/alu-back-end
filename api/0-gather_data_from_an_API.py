@@ -3,33 +3,45 @@
 import requests
 import sys
 
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 0-gather_data_from_an_API.py <employee_id>")
+        sys.exit(1)
 
-def main():
-    """main function"""
-    user_id = int(sys.argv[1])
-    todo_url = 'https://jsonplaceholder.typicode.com/todos'
-    user_url = 'https://jsonplaceholder.typicode.com/users/{}'.format(user_id)
+    try:
+        employee_id = int(sys.argv[1])
+    except ValueError:
+        print("Employee ID must be an integer")
+        sys.exit(1)
 
-    response = requests.get(todo_url)
+    # API endpoints
+    user_url = (
+        "https://jsonplaceholder.typicode.com/users/{}".format(employee_id)
+    )
+    todos_url = (
+        "https://jsonplaceholder.typicode.com/todos?userId={}"
+        .format(employee_id)
+    )
 
-    total_questions = 0
-    completed = []
-    for todo in response.json():
+    # Get employee data
+    user_response = requests.get(user_url)
+    if user_response.status_code != 200:
+        print("Employee not found")
+        sys.exit(1)
 
-        if todo['userId'] == user_id:
-            total_questions += 1
+    employee_name = user_response.json().get("name")
 
-            if todo['completed']:
-                completed.append(todo['title'])
+    # Get TODOs
+    todos_response = requests.get(todos_url)
+    todos = todos_response.json()
 
-    Employee_name = requests.get(user_url).json()['name']
+    # filter completed tasks
+    done_tasks = [task for task in todos if task.get("completed")]
 
-    printer = ("Employee {} is done with tasks({}/{}):".format(Employee_name,
-               len(completed), total_questions))
-    print(printer)
-    for q in completed:
-        print("\t {}".format(q))
-
-
-if __name__ == '__main__':
-    main()
+    print(
+        "Employee {} is done with tasks({}/{}):".format(
+            employee_name, len(done_tasks), len(todos)
+        )
+    )
+    for task in done_tasks:
+        print("\t {}".format(task.get("title")))
