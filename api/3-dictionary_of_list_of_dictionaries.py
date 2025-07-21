@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 """
 Exports data of all employees' Todo lists to a JSON file.
 Format: { "USER_ID": [ {"username": "USERNAME", "task": "TASK_TITLE",
@@ -41,4 +42,3 @@ if __name__ == "__main__":
     # Save to JSON file
     with open("todo_all_employees.json", "w") as jsonfile:
         json.dump(all_data, jsonfile)
-        
